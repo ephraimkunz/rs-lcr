@@ -1,0 +1,18 @@
+[package]
+name = "lcr"
+version = "0.1.0"
+authors = ["Ephraim Kunz <ephraimkunz@me.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = {version = "0.10", features = ["blocking", "json"]}
+anyhow = "1.0"
+regex = "1"
+headless_chrome = "0"
+failure = "0"
+lazy_static = "1"
+serde_any = "0"
+serde_json = "1.0"
+serde = "1.0"
