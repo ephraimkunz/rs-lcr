@@ -13,6 +13,10 @@ regex = "1"
 headless_chrome = "0"
 failure = "0"
 lazy_static = "1"
-serde_any = "0"
 serde_json = "1.0"
-serde = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = 3

@@ -11,6 +11,8 @@ use reqwest::{
 };
 use serde::Deserialize;
 
+use std::io::Write;
+
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::thread::sleep;
@@ -72,7 +74,7 @@ impl Client {
 
     fn login(&self) -> Result<Headers> {
         let launch_options = LaunchOptionsBuilder::default()
-            .headless(true)
+            .headless(false)
             .build()
             .unwrap();
         let browser = Browser::new(launch_options).map_err(|e| anyhow!(e.to_string()))?;
@@ -132,8 +134,12 @@ impl Client {
                 .url
                 .starts_with("https://lcr.churchofjesuschrist.org/services/member-lookup")
             {
-                let _ = File::create(HEADER_FILE_NAME);
-                let _ = serde_any::to_file(HEADER_FILE_NAME, &request.headers);
+                File::create(HEADER_FILE_NAME)
+                    .and_then(|mut f| {
+                        let s = serde_json::to_string(&request.headers).unwrap();
+                        f.write_all(s.as_bytes())
+                    })
+                    .expect("Unable to write headers to file");
             }
 
             RequestInterceptionDecision::Continue
@@ -147,8 +153,8 @@ impl Client {
             .map_err(|e| anyhow!(e.to_string()))?;
         pause_for(1); // Wait for network request.
 
-        let headers: HashMap<String, String> =
-            serde_any::from_file(HEADER_FILE_NAME).map_err(|e| anyhow!(e.to_string()))?;
+        let s = fs::read_to_string(HEADER_FILE_NAME)?;
+        let headers: HashMap<String, String> = serde_json::from_str(&s)?;
         fs::remove_file(HEADER_FILE_NAME)?;
 
         match headers.is_empty() {
