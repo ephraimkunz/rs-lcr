@@ -16,6 +16,9 @@ use std::io::Write;
 use std::thread::sleep;
 use std::time::Duration;
 
+// Possible errors to expose.
+
+
 #[derive(Debug)]
 pub struct Credentials {
     username: String,
