@@ -1,20 +1,18 @@
+use anyhow::{anyhow, Result};
 use headless_chrome::{
     browser::tab::RequestInterceptionDecision,
     protocol::network::events::RequestInterceptedEventParams,
     protocol::network::methods::RequestPattern, Browser, LaunchOptionsBuilder,
 };
-
-use anyhow::{anyhow, Result};
 use reqwest::{
     blocking,
     header::{HeaderMap, HeaderName, HeaderValue},
 };
 use serde::Deserialize;
 
-use std::io::Write;
-
 use std::collections::HashMap;
 use std::fs::{self, File};
+use std::io::Write;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -77,47 +75,45 @@ impl Client {
             .headless(false)
             .build()
             .unwrap();
-        let browser = Browser::new(launch_options).map_err(|e| anyhow!(e.to_string()))?;
-        let tab = browser
-            .wait_for_initial_tab()
-            .map_err(|e| anyhow!(e.to_string()))?;
+        let browser = Browser::new(launch_options).map_err(|e| e.compat())?;
+        let tab = browser.wait_for_initial_tab().map_err(|e| e.compat())?;
 
         // Navigate to site.
         tab.navigate_to("https://lcr.churchofjesuschrist.org")
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
 
         // Username
         tab.wait_for_element_with_custom_timeout(
             "input#okta-signin-username",
             Duration::from_secs(10),
         )
-        .map_err(|e| anyhow!(e.to_string()))?
+        .map_err(|e| e.compat())?
         .click()
-        .map_err(|e| anyhow!(e.to_string()))?;
+        .map_err(|e| e.compat())?;
         tab.type_str(&self.credentials.username)
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
         tab.wait_for_element("input#okta-signin-submit")
-            .map_err(|e| anyhow!(e.to_string()))?
+            .map_err(|e| e.compat())?
             .click()
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
 
         // Password
         tab.wait_for_element("input[type=password]")
-            .map_err(|e| anyhow!(e.to_string()))?
+            .map_err(|e| e.compat())?
             .click()
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
         tab.type_str(&self.credentials.password)
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
         pause_for(1); // Not pausing here sometimes results in crashes.
         tab.wait_for_element("input[type=submit]")
-            .map_err(|e| anyhow!(e.to_string()))?
+            .map_err(|e| e.compat())?
             .click()
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
 
         // Real page
         let member_lookup = tab
             .wait_for_element_with_custom_timeout("input#memberLookupMain", Duration::from_secs(5))
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
 
         // Get the info we need to start requesting stuff ourselves.
         let pattern = RequestPattern {
@@ -146,11 +142,10 @@ impl Client {
         });
 
         tab.enable_request_interception(&patterns, interceptor)
-            .map_err(|e| anyhow!(e.to_string()))?;
+            .map_err(|e| e.compat())?;
 
-        member_lookup.click().map_err(|e| anyhow!(e.to_string()))?;
-        tab.type_str("ephraim")
-            .map_err(|e| anyhow!(e.to_string()))?;
+        member_lookup.click().map_err(|e| e.compat())?;
+        tab.type_str("ephraim").map_err(|e| e.compat())?;
         pause_for(1); // Wait for network request.
 
         let s = fs::read_to_string(HEADER_FILE_NAME)?;
