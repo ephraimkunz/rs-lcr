@@ -77,19 +77,17 @@ impl Client {
             .unwrap();
         let browser = Browser::new(launch_options).map_err(|e| e.compat())?;
         let tab = browser.wait_for_initial_tab().map_err(|e| e.compat())?;
+        tab.set_default_timeout(Duration::from_secs(30));
 
         // Navigate to site.
         tab.navigate_to("https://lcr.churchofjesuschrist.org")
             .map_err(|e| e.compat())?;
 
         // Username
-        tab.wait_for_element_with_custom_timeout(
-            "input#okta-signin-username",
-            Duration::from_secs(10),
-        )
-        .map_err(|e| e.compat())?
-        .click()
-        .map_err(|e| e.compat())?;
+        tab.wait_for_element("input#okta-signin-username")
+            .map_err(|e| e.compat())?
+            .click()
+            .map_err(|e| e.compat())?;
         tab.type_str(&self.credentials.username)
             .map_err(|e| e.compat())?;
         tab.wait_for_element("input#okta-signin-submit")
@@ -112,7 +110,7 @@ impl Client {
 
         // Real page
         let member_lookup = tab
-            .wait_for_element_with_custom_timeout("input#memberLookupMain", Duration::from_secs(5))
+            .wait_for_element("input#memberLookupMain")
             .map_err(|e| e.compat())?;
 
         // Get the info we need to start requesting stuff ourselves.
