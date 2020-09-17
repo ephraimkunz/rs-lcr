@@ -72,7 +72,7 @@ impl Client {
 
     fn login(&self) -> Result<Headers> {
         let launch_options = LaunchOptionsBuilder::default()
-            .headless(false)
+            .headless(true)
             .build()
             .unwrap();
         let browser = Browser::new(launch_options).map_err(|e| e.compat())?;
