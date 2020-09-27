@@ -623,6 +623,7 @@ name = "lcr"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "failure",
  "headless_chrome",
  "reqwest",
  "serde",

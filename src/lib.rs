@@ -16,15 +16,16 @@ use std::io::Write;
 use std::thread::sleep;
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Credentials {
     username: String,
     password: String,
 }
 
 impl Credentials {
+    #[must_use]
     pub fn new(username: &str, password: &str) -> Self {
-        Credentials {
+        Self {
             username: username.to_string(),
             password: password.to_string(),
         }
@@ -33,28 +34,33 @@ impl Credentials {
 
 #[derive(Debug)]
 pub struct Client {
-    wrapped_client: blocking::Client,
+    client: blocking::Client,
     credentials: Credentials,
     headers: Option<Headers>,
 }
 
 impl Client {
+    #[must_use]
     pub fn new(credentials: Credentials) -> Self {
-        Client {
-            wrapped_client: blocking::Client::new(),
+        Self {
+            client: blocking::Client::new(),
             credentials,
             headers: None,
         }
     }
 
+    /// # Errors
+    /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self) -> Result<Vec<MovedInPerson>> {
-        let people: Vec<MovedInPerson> = self.wrapped_client.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")
+        let people: Vec<MovedInPerson> = self.client.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")
         .headers(self.header_map()?).send()?.json()?;
         Ok(people)
     }
 
+    /// # Errors
+    /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self) -> Result<Vec<MovedOutPerson>> {
-        let people: Vec<MovedOutPerson> = self.wrapped_client.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")
+        let people: Vec<MovedOutPerson> = self.client.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")
         .headers(self.header_map()?).send()?.json()?;
         Ok(people)
     }
@@ -71,47 +77,51 @@ impl Client {
     }
 
     fn login(&self) -> Result<Headers> {
+        const HEADER_FILE_NAME: &str = "headers.json"; // Kind of a hack, but I can't figure how to share data from within this interceptor closure to outside it another way.
+
         let launch_options = LaunchOptionsBuilder::default()
             .headless(true)
             .build()
             .unwrap();
-        let browser = Browser::new(launch_options).map_err(|e| e.compat())?;
-        let tab = browser.wait_for_initial_tab().map_err(|e| e.compat())?;
+        let browser = Browser::new(launch_options).map_err(failure::Error::compat)?;
+        let tab = browser
+            .wait_for_initial_tab()
+            .map_err(failure::Error::compat)?;
         tab.set_default_timeout(Duration::from_secs(30));
 
         // Navigate to site.
         tab.navigate_to("https://lcr.churchofjesuschrist.org")
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
 
         // Username
         tab.wait_for_element("input#okta-signin-username")
-            .map_err(|e| e.compat())?
+            .map_err(failure::Error::compat)?
             .click()
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
         tab.type_str(&self.credentials.username)
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
         tab.wait_for_element("input#okta-signin-submit")
-            .map_err(|e| e.compat())?
+            .map_err(failure::Error::compat)?
             .click()
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
 
         // Password
         tab.wait_for_element("input[type=password]")
-            .map_err(|e| e.compat())?
+            .map_err(failure::Error::compat)?
             .click()
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
         tab.type_str(&self.credentials.password)
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
         pause_for(1); // Not pausing here sometimes results in crashes.
         tab.wait_for_element("input[type=submit]")
-            .map_err(|e| e.compat())?
+            .map_err(failure::Error::compat)?
             .click()
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
 
         // Real page
         let member_lookup = tab
             .wait_for_element("input#memberLookupMain")
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
 
         // Get the info we need to start requesting stuff ourselves.
         let pattern = RequestPattern {
@@ -121,7 +131,6 @@ impl Client {
         };
         let patterns = vec![pattern];
 
-        const HEADER_FILE_NAME: &str = "headers.json"; // Kind of a hack, but I can't figure how to share data from within this closure to outside it another way.
         let interceptor = Box::new(|_, _, params: RequestInterceptedEventParams| {
             let request = params.request;
             if request
@@ -140,19 +149,20 @@ impl Client {
         });
 
         tab.enable_request_interception(&patterns, interceptor)
-            .map_err(|e| e.compat())?;
+            .map_err(failure::Error::compat)?;
 
-        member_lookup.click().map_err(|e| e.compat())?;
-        tab.type_str("ephraim").map_err(|e| e.compat())?;
+        member_lookup.click().map_err(failure::Error::compat)?;
+        tab.type_str("ephraim").map_err(failure::Error::compat)?;
         pause_for(1); // Wait for network request.
 
         let s = fs::read_to_string(HEADER_FILE_NAME)?;
         let headers: HashMap<String, String> = serde_json::from_str(&s)?;
         fs::remove_file(HEADER_FILE_NAME)?;
 
-        match headers.is_empty() {
-            true => Err(anyhow!("Couldn't retrieve header for making queries")),
-            false => Ok(Headers::new(headers)),
+        if headers.is_empty() {
+            Err(anyhow!("Couldn't retrieve header for making queries"))
+        } else {
+            Ok(Headers::new(headers))
         }
     }
 }
@@ -176,8 +186,8 @@ pub struct MovedInPerson {
 #[derive(Debug)]
 struct Headers(HashMap<String, String>);
 impl Headers {
-    fn new(map: HashMap<String, String>) -> Self {
-        Headers(map)
+    const fn new(map: HashMap<String, String>) -> Self {
+        Self(map)
     }
 
     fn header_map(&self) -> Result<HeaderMap> {
