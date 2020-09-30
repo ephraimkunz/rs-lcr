@@ -82,7 +82,7 @@ impl Client {
         let launch_options = LaunchOptionsBuilder::default()
             .headless(true)
             .build()
-            .unwrap();
+            .map_err(|e| anyhow!(e))?;
         let browser = Browser::new(launch_options).map_err(failure::Error::compat)?;
         let tab = browser
             .wait_for_initial_tab()
@@ -139,7 +139,8 @@ impl Client {
             {
                 File::create(HEADER_FILE_NAME)
                     .and_then(|mut f| {
-                        let s = serde_json::to_string(&request.headers).unwrap();
+                        let s = serde_json::to_string(&request.headers)
+                            .expect("Unable to serialze request headers to string");
                         f.write_all(s.as_bytes())
                     })
                     .expect("Unable to write headers to file");
