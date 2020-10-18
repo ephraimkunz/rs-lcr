@@ -1,4 +1,5 @@
-# rs-lcr ![CI](https://github.com/ephraimkunz/rs-lcr/workflows/CI/badge.svg?branch=master)
+![CI](https://github.com/ephraimkunz/rs-lcr/workflows/CI/badge.svg?branch=master)
+# rs-lcr
 
 Unofficial API and utilities for Leader and Clerk Resources (LCR) data in Rust. 
 
