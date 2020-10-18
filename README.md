@@ -1,4 +1,5 @@
-# rs-lcr
+# rs-lcr ![CI](https://github.com/ephraimkunz/rs-lcr/workflows/CI/badge.svg?branch=master)
+
 Unofficial API and utilities for Leader and Clerk Resources (LCR) data in Rust. 
 
 The [official Church LCR website](https://lcr.churchofjesuschrist.org) is where leaders and clerks spend a lot of time. The Church doesn't offer an API, so I thought I'd expose one. 
