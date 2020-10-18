@@ -12,7 +12,7 @@ path = "src/main.rs"
 name = "lcr"
 
 [dependencies]
-reqwest = {version = "0.10", features = ["blocking", "json"]}
+ureq = { version = "1", features = ["json"] }
 anyhow = "1.0"
 headless_chrome = "0"
 serde_json = "1.0"

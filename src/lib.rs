@@ -4,10 +4,7 @@ use headless_chrome::{
     protocol::network::events::RequestInterceptedEventParams,
     protocol::network::methods::RequestPattern, Browser, LaunchOptionsBuilder,
 };
-use reqwest::{
-    blocking,
-    header::{HeaderMap, HeaderName, HeaderValue},
-};
+
 use serde::Deserialize;
 
 use std::collections::HashMap;
@@ -15,6 +12,8 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::thread::sleep;
 use std::time::Duration;
+
+type Headers = HashMap<String, String>;
 
 #[derive(Debug, Clone)]
 pub struct Credentials {
@@ -34,7 +33,6 @@ impl Credentials {
 
 #[derive(Debug)]
 pub struct Client {
-    client: blocking::Client,
     credentials: Credentials,
     headers: Option<Headers>,
 }
@@ -43,36 +41,59 @@ impl Client {
     #[must_use]
     pub fn new(credentials: Credentials) -> Self {
         Self {
-            client: blocking::Client::new(),
             credentials,
             headers: None,
+        }
+    }
+
+    fn get(&mut self, url: &str) -> Result<ureq::Response> {
+        let mut req = ureq::get(url);
+        let headers = self.header_map()?;
+        for (k, v) in headers {
+            req.set(k, v);
+        }
+        let resp = req.call();
+        if resp.ok() {
+            Ok(resp)
+        } else if resp.synthetic() {
+            Err(anyhow!(
+                "GET returned synthetic error: {}, {}",
+                url,
+                resp.synthetic_error().as_ref().unwrap()
+            ))
+        } else {
+            Err(anyhow!(
+                "GET returned error status code: {}, {}",
+                url,
+                resp.status_line()
+            ))
         }
     }
 
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self) -> Result<Vec<MovedInPerson>> {
-        let people: Vec<MovedInPerson> = self.client.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")
-        .headers(self.header_map()?).send()?.json()?;
+        let resp = self.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")?;
+        let people: Vec<MovedInPerson> = resp.into_json_deserialize()?;
         Ok(people)
     }
 
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self) -> Result<Vec<MovedOutPerson>> {
-        let people: Vec<MovedOutPerson> = self.client.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")
-        .headers(self.header_map()?).send()?.json()?;
+        let resp = self.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")?;
+        let people: Vec<MovedOutPerson> = resp.into_json_deserialize()?;
         Ok(people)
     }
 
-    fn header_map(&mut self) -> Result<HeaderMap> {
+    fn header_map(&mut self) -> Result<&Headers> {
         if self.headers.is_none() {
             self.headers = Some(self.login()?);
         }
 
         match &self.headers {
             None => unreachable!("Headers should have been set above or returned an error"),
-            Some(h) => Ok(h.header_map()?),
+            Some(h) => Ok(h),
         }
     }
 
@@ -163,7 +184,7 @@ impl Client {
         if headers.is_empty() {
             Err(anyhow!("Couldn't retrieve header for making queries"))
         } else {
-            Ok(Headers::new(headers))
+            Ok(headers)
         }
     }
 }
@@ -182,25 +203,6 @@ pub struct MovedInPerson {
     name: String,
     move_date: String,
     prior_unit_name: Option<String>,
-}
-
-#[derive(Debug)]
-struct Headers(HashMap<String, String>);
-impl Headers {
-    const fn new(map: HashMap<String, String>) -> Self {
-        Self(map)
-    }
-
-    fn header_map(&self) -> Result<HeaderMap> {
-        let mut hm = HeaderMap::new();
-        for (k, v) in &self.0 {
-            let header_name = HeaderName::from_lowercase(k.to_lowercase().as_bytes())?;
-            let header_value = HeaderValue::from_str(v)?;
-            hm.insert(header_name, header_value);
-        }
-
-        Ok(hm)
-    }
 }
 
 fn pause_for(d: u64) {
