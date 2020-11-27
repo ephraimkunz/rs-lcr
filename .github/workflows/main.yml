@@ -20,6 +20,9 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    env:
+      LCR_USERNAME: ${{ secrets.LCR_USERNAME }}
+      LCR_PASSWORD: ${{ secrets.LCR_PASSWORD }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1

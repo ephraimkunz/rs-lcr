@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use lcr::{Client, Credentials};
+use lcr::client::{Client, Credentials};
 use std::env;
 
 fn main() -> Result<()> {
