@@ -74,7 +74,7 @@ impl Client {
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self) -> Result<Vec<MovedInPerson>> {
         let resp = self.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")?;
-        let people: Vec<MovedInPerson> = resp.into_json_deserialize().map_err(|e| Error::IO(e))?;
+        let people: Vec<MovedInPerson> = resp.into_json_deserialize().map_err(Error::IO)?;
         Ok(people)
     }
 
@@ -82,7 +82,7 @@ impl Client {
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self) -> Result<Vec<MovedOutPerson>> {
         let resp = self.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")?;
-        let people: Vec<MovedOutPerson> = resp.into_json_deserialize().map_err(|e| Error::IO(e))?;
+        let people: Vec<MovedOutPerson> = resp.into_json_deserialize().map_err(Error::IO)?;
         Ok(people)
     }
 
@@ -185,10 +185,10 @@ impl Client {
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
         sleep(Duration::from_secs(1)); // Wait for network request.
 
-        let s = fs::read_to_string(HEADER_FILE_NAME).map_err(|e| Error::IO(e))?;
+        let s = fs::read_to_string(HEADER_FILE_NAME).map_err(Error::IO)?;
         let headers: HashMap<String, String> = serde_json::from_str(&s)
             .map_err(|e| Error::IO(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?;
-        fs::remove_file(HEADER_FILE_NAME).map_err(|e| Error::IO(e))?;
+        fs::remove_file(HEADER_FILE_NAME).map_err(Error::IO)?;
 
         if headers.is_empty() {
             Err(Error::IO(std::io::Error::new(
@@ -214,7 +214,13 @@ mod tests {
         );
         let mut client = Client::new(credentials);
 
-        assert!(client.moved_out().expect("Client should have returned a list of moved out people").len() > 0);
+        assert!(
+            client
+                .moved_out()
+                .expect("Client should have returned a list of moved out people")
+                .len()
+                > 0
+        );
     }
 
     #[test]
@@ -225,6 +231,12 @@ mod tests {
         );
         let mut client = Client::new(credentials);
 
-        assert!(client.moved_in().expect("Client should have returned a list of moved in people").len() > 0);
+        assert!(
+            client
+                .moved_in()
+                .expect("Client should have returned a list of moved in people")
+                .len()
+                > 0
+        );
     }
 }

@@ -69,6 +69,9 @@ jobs:
   coverage:
     name: Code coverage
     runs-on: ubuntu-latest
+    env:
+      LCR_USERNAME: ${{ secrets.LCR_USERNAME }}
+      LCR_PASSWORD: ${{ secrets.LCR_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
