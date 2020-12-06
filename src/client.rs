@@ -6,14 +6,22 @@ use headless_chrome::{
     protocol::network::methods::RequestPattern, Browser, LaunchOptionsBuilder,
 };
 
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::fs::{self, File};
-use std::io::Write;
+use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
 
 type Headers = HashMap<String, String>;
 type Result<R> = std::result::Result<R, Error>;
+
+use std::sync::mpsc::{channel, Receiver, Sender};
+
+// Lots of shenanigans since we can't directly set the headers inside the Fn interceptor because it's not FnMut.
+static CHANNEL: Lazy<(Mutex<Sender<Headers>>, Mutex<Receiver<Headers>>)> = Lazy::new(|| {
+    let (tx, rx) = channel();
+    (Mutex::new(tx), Mutex::new(rx))
+});
 
 #[derive(Debug, Clone)]
 pub struct Credentials {
@@ -98,8 +106,6 @@ impl Client {
     }
 
     fn login(&self) -> Result<Headers> {
-        const HEADER_FILE_NAME: &str = "headers.json"; // Kind of a hack, but I can't figure how to share data from within this interceptor closure to outside it another way.
-
         let launch_options = LaunchOptionsBuilder::default()
             .headless(true)
             .build()
@@ -155,7 +161,6 @@ impl Client {
             resource_type: Some("XHR"),
             interception_stage: Some("Request"),
         };
-        let patterns = vec![pattern];
 
         let interceptor = Box::new(|_, _, params: RequestInterceptedEventParams| {
             let request = params.request;
@@ -163,33 +168,23 @@ impl Client {
                 .url
                 .starts_with("https://lcr.churchofjesuschrist.org/services/member-lookup")
             {
-                File::create(HEADER_FILE_NAME)
-                    .and_then(|mut f| {
-                        let s = serde_json::to_string(&request.headers)
-                            .expect("Unable to serialze request headers to string");
-                        f.write_all(s.as_bytes())
-                    })
-                    .expect("Unable to write headers to file");
+                CHANNEL.0.lock().unwrap().send(request.headers).unwrap();
             }
 
             RequestInterceptionDecision::Continue
         });
 
-        tab.enable_request_interception(&patterns, interceptor)
+        tab.enable_request_interception(&[pattern], interceptor)
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
+
         member_lookup
             .click()
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
 
-        tab.type_str("ephraim")
+        tab.type_str("aaa") // Kick off a request, so that we can intercept it and get headers.
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
-        sleep(Duration::from_secs(1)); // Wait for network request.
 
-        let s = fs::read_to_string(HEADER_FILE_NAME).map_err(Error::IO)?;
-        let headers: HashMap<String, String> = serde_json::from_str(&s)
-            .map_err(|e| Error::IO(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?;
-        fs::remove_file(HEADER_FILE_NAME).map_err(Error::IO)?;
-
+        let headers = CHANNEL.1.lock().unwrap().recv().unwrap();
         if headers.is_empty() {
             Err(Error::IO(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,

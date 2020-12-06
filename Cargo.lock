@@ -464,6 +464,7 @@ dependencies = [
  "anyhow",
  "failure",
  "headless_chrome",
+ "once_cell",
  "serde",
  "serde_json",
  "thiserror",
