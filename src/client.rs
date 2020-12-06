@@ -15,10 +15,11 @@ use std::time::Duration;
 type Headers = HashMap<String, String>;
 type Result<R> = std::result::Result<R, Error>;
 
-use std::sync::mpsc::{channel, Receiver, Sender};
-
 // Lots of shenanigans since we can't directly set the headers inside the Fn interceptor because it's not FnMut.
-static CHANNEL: Lazy<(Mutex<Sender<Headers>>, Mutex<Receiver<Headers>>)> = Lazy::new(|| {
+use std::sync::mpsc::{channel, Receiver, Sender};
+type MutexedSender = Mutex<Sender<Headers>>;
+type MutexedReceiver = Mutex<Receiver<Headers>>;
+static CHANNEL: Lazy<(MutexedSender, MutexedReceiver)> = Lazy::new(|| {
     let (tx, rx) = channel();
     (Mutex::new(tx), Mutex::new(rx))
 });
