@@ -12,7 +12,7 @@ path = "src/main.rs"
 name = "lcr"
 
 [dependencies]
-ureq = { version = "1", features = ["json"] }
+ureq = { version = "2", features = ["json"] }
 anyhow = "1.0"
 failure = "0.1"
 thiserror = "1"
