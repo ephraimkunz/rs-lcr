@@ -59,31 +59,17 @@ impl Client {
         let mut req = ureq::get(url);
         let headers = self.header_map()?;
         for (k, v) in headers {
-            req.set(k, v);
+            req = req.set(k, v);
         }
-        let resp = req.call();
-        if resp.ok() {
-            Ok(resp)
-        } else if resp.synthetic() {
-            Err(Error::Http(format!(
-                "GET returned synthetic error: {}, {}",
-                url,
-                resp.synthetic_error().as_ref().unwrap()
-            )))
-        } else {
-            Err(Error::Http(format!(
-                "GET returned error status code: {}, {}",
-                url,
-                resp.status_line()
-            )))
-        }
+
+        Ok(req.call()?)
     }
 
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self) -> Result<Vec<MovedInPerson>> {
         let resp = self.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")?;
-        let people: Vec<MovedInPerson> = resp.into_json_deserialize().map_err(Error::IO)?;
+        let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::IO)?;
         Ok(people)
     }
 
@@ -91,7 +77,7 @@ impl Client {
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self) -> Result<Vec<MovedOutPerson>> {
         let resp = self.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")?;
-        let people: Vec<MovedOutPerson> = resp.into_json_deserialize().map_err(Error::IO)?;
+        let people: Vec<MovedOutPerson> = resp.into_json().map_err(Error::IO)?;
         Ok(people)
     }
 

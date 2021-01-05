@@ -19,7 +19,7 @@ impl Display for HeadlessError {
 #[derive(ThisError, Debug)]
 pub enum Error {
     #[error("Error making HTTP request: {0}")]
-    Http(String),
+    Http(#[from] ureq::Error),
 
     #[error("Error in headless browser: {0}")]
     Headless(HeadlessError),
