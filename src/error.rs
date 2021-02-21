@@ -25,5 +25,5 @@ pub enum Error {
     Headless(HeadlessError),
 
     #[error("Error while doing IO: {0}")]
-    IO(#[from] io::Error),
+    Io(#[from] io::Error),
 }

@@ -69,7 +69,7 @@ impl Client {
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self) -> Result<Vec<MovedInPerson>> {
         let resp = self.get("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/17515/1?lang=eng")?;
-        let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::IO)?;
+        let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
     }
 
@@ -77,7 +77,7 @@ impl Client {
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self) -> Result<Vec<MovedOutPerson>> {
         let resp = self.get("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/17515/1?lang=eng")?;
-        let people: Vec<MovedOutPerson> = resp.into_json().map_err(Error::IO)?;
+        let people: Vec<MovedOutPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
     }
 
@@ -173,7 +173,7 @@ impl Client {
 
         let headers = CHANNEL.1.lock().unwrap().recv().unwrap();
         if headers.is_empty() {
-            Err(Error::IO(std::io::Error::new(
+            Err(Error::Io(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "Header for making queries has no entries".to_string(),
             )))
