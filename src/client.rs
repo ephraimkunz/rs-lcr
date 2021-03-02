@@ -28,7 +28,9 @@ static HEADER_CHANNEL: Lazy<(MutexedHeaderSender, MutexedHeaderReceiver)> = Lazy
     (Mutex::new(tx), Mutex::new(rx))
 });
 
-static UNITNUM_CHANNEL: Lazy<(Mutex<Sender<String>>, Mutex<Receiver<String>>)> = Lazy::new(|| {
+type MutexedStringSender = Mutex<Sender<String>>;
+type MutexedStringReceiver = Mutex<Receiver<String>>;
+static UNITNUM_CHANNEL: Lazy<(MutexedStringSender, MutexedStringReceiver)> = Lazy::new(|| {
     let (tx, rx) = channel();
     (Mutex::new(tx), Mutex::new(rx))
 });

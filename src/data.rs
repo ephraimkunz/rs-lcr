@@ -24,5 +24,5 @@ pub struct MemberListPerson {
     email: Option<String>,
     phone_number: Option<String>,
     sex: String,
-    name_list_preferred_local: String
+    name_list_preferred_local: String,
 }
