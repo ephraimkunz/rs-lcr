@@ -15,3 +15,14 @@ pub struct MovedInPerson {
     move_date: String,
     prior_unit_name: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MemberListPerson {
+    age: u8,
+    convert: bool,
+    email: Option<String>,
+    phone_number: Option<String>,
+    sex: String,
+    name_list_preferred_local: String
+}
