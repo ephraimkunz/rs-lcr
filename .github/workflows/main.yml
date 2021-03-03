@@ -23,6 +23,7 @@ jobs:
     env:
       LCR_USERNAME: ${{ secrets.LCR_USERNAME }}
       LCR_PASSWORD: ${{ secrets.LCR_PASSWORD }}
+      LCR_UNIT: ${{ secrets.LCR_UNIT }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -72,6 +73,7 @@ jobs:
     env:
       LCR_USERNAME: ${{ secrets.LCR_USERNAME }}
       LCR_PASSWORD: ${{ secrets.LCR_PASSWORD }}
+      LCR_UNIT: ${{ secrets.LCR_UNIT }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2

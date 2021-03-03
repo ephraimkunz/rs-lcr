@@ -18,7 +18,14 @@ pub struct MovedInPerson {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Address {
+    address_lines: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MemberListPerson {
+    address: Address,
     age: u8,
     convert: bool,
     email: Option<String>,
