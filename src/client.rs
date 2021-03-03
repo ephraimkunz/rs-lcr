@@ -3,11 +3,7 @@ use crate::error::{Error, HeadlessError};
 use headless_chrome::{
     browser::tab::RequestInterceptionDecision,
     protocol::network::events::RequestInterceptedEventParams,
-    protocol::network::{
-        events::ResponseReceivedEventParams,
-        methods::{GetResponseBodyReturnObject, RequestPattern},
-    },
-    Browser, LaunchOptionsBuilder,
+    protocol::network::methods::RequestPattern, Browser, LaunchOptionsBuilder,
 };
 
 use once_cell::sync::Lazy;
@@ -28,30 +24,24 @@ static HEADER_CHANNEL: Lazy<(MutexedHeaderSender, MutexedHeaderReceiver)> = Lazy
     (Mutex::new(tx), Mutex::new(rx))
 });
 
-type MutexedStringSender = Mutex<Sender<String>>;
-type MutexedStringReceiver = Mutex<Receiver<String>>;
-static UNITNUM_CHANNEL: Lazy<(MutexedStringSender, MutexedStringReceiver)> = Lazy::new(|| {
-    let (tx, rx) = channel();
-    (Mutex::new(tx), Mutex::new(rx))
-});
-
-static UNITNUM_REGEX: Lazy<regex::Regex> =
-    Lazy::new(|| regex::Regex::new("\"unitNumber\":(\\d+)").unwrap());
-
 #[derive(Debug, Clone)]
 pub struct Client {
     username: String,
     password: String,
-    unit_number: Option<String>,
+    unit_number: String,
     headers: Option<Headers>,
 }
 
 impl Client {
-    pub fn new(username: &str, password: &str) -> Self {
+    pub fn new(
+        username: impl Into<String>,
+        password: impl Into<String>,
+        unit_number: impl Into<String>,
+    ) -> Self {
         Self {
-            username: username.to_string(),
-            password: password.to_string(),
-            unit_number: None,
+            username: username.into(),
+            password: password.into(),
+            unit_number: unit_number.into(),
             headers: None,
         }
     }
@@ -69,7 +59,7 @@ impl Client {
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self, num_months: u8) -> Result<Vec<MovedInPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/{}/{}?lang=eng", self.unit_number()?, num_months);
+        let url = format!("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/{}/{}?lang=eng", self.unit_number, num_months);
         let resp = self.get(&url)?;
         let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
@@ -78,37 +68,23 @@ impl Client {
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self, num_months: u8) -> Result<Vec<MovedOutPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/{}/{}?lang=eng", self.unit_number()?, num_months);
+        let url = format!("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/{}/{}?lang=eng", self.unit_number, num_months);
         let resp = self.get(&url)?;
         let people: Vec<MovedOutPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
     }
 
     pub fn member_list(&mut self) -> Result<Vec<MemberListPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/umlu/report/member-list?lang=eng&unitNumber={}", self.unit_number()?);
+        let url = format!("https://lcr.churchofjesuschrist.org/services/umlu/report/member-list?lang=eng&unitNumber={}", self.unit_number);
         let resp = self.get(&url)?;
         let people: Vec<MemberListPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
     }
 
-    fn unit_number(&mut self) -> Result<&str> {
-        if self.unit_number.is_none() {
-            let (headers, unit_number) = self.login()?;
-            self.headers = Some(headers);
-            self.unit_number = Some(unit_number);
-        }
-
-        match &self.unit_number {
-            None => unreachable!("Unit number should have been set above or returned an error"),
-            Some(h) => Ok(h),
-        }
-    }
-
     fn header_map(&mut self) -> Result<&Headers> {
         if self.headers.is_none() {
-            let (headers, unit_number) = self.login()?;
+            let headers = self.login()?;
             self.headers = Some(headers);
-            self.unit_number = Some(unit_number);
         }
 
         match &self.headers {
@@ -117,7 +93,7 @@ impl Client {
         }
     }
 
-    fn login(&self) -> Result<(Headers, String)> {
+    fn login(&self) -> Result<Headers> {
         let launch_options = LaunchOptionsBuilder::default()
             .headless(true)
             .build()
@@ -187,43 +163,10 @@ impl Client {
         tab.enable_request_interception(&[pattern], interceptor)
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
 
-        tab.enable_response_handling(Box::new(
-            |params: ResponseReceivedEventParams,
-             fetch_body: &dyn Fn() -> std::result::Result<
-                GetResponseBodyReturnObject,
-                failure::Error,
-            >| {
-                if params.response.url == "https://lcr.churchofjesuschrist.org/?lang=eng" {
-                    // Wait for the response body to download. Unfortunately there's no way
-                    // right now to know how long to wait. See https://github.com/atroche/rust-headless-chrome/issues/153
-                    sleep(Duration::from_secs(1));
-
-                    match fetch_body() {
-                        Ok(body) => {
-                            let body = body.body;
-                            if let Some(caps) = UNITNUM_REGEX.captures(&body) {
-                                if let Some(m) = caps.get(1) {
-                                    UNITNUM_CHANNEL
-                                        .0
-                                        .lock()
-                                        .unwrap()
-                                        .send(m.as_str().to_string())
-                                        .unwrap();
-                                }
-                            }
-                        }
-                        Err(e) => eprintln!("{}", e),
-                    }
-                }
-            },
-        ))
-        .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
-
         submit_element
             .click()
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
 
-        let unit_num = UNITNUM_CHANNEL.1.lock().unwrap().recv().unwrap();
         let headers = HEADER_CHANNEL.1.lock().unwrap().recv().unwrap();
         if headers.is_empty() {
             Err(Error::Io(std::io::Error::new(
@@ -231,7 +174,7 @@ impl Client {
                 "Header for making queries has no entries".to_string(),
             )))
         } else {
-            Ok((headers, unit_num))
+            Ok(headers)
         }
     }
 }
@@ -244,8 +187,9 @@ mod tests {
     #[test]
     fn test_moved_out() {
         let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
-        let password = &env::var("LCR_PASSWORD").expect("LCR_PASWWORD env var required");
-        let mut client = Client::new(username, password);
+        let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
+        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNITenv var required");
+        let mut client = Client::new(username, password, unit_number);
 
         assert!(
             client
@@ -259,12 +203,29 @@ mod tests {
     #[test]
     fn test_moved_in() {
         let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
-        let password = &env::var("LCR_PASSWORD").expect("LCR_PASWWORD env var required");
-        let mut client = Client::new(username, password);
+        let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
+        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNITenv var required");
+        let mut client = Client::new(username, password, unit_number);
 
         assert!(
             client
                 .moved_in(1)
+                .expect("Client should have returned a list of moved in people")
+                .len()
+                > 0
+        );
+    }
+
+    #[test]
+    fn test_member_list() {
+        let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
+        let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
+        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNITenv var required");
+        let mut client = Client::new(username, password, unit_number);
+
+        assert!(
+            client
+                .member_list()
                 .expect("Client should have returned a list of moved in people")
                 .len()
                 > 0

@@ -3,7 +3,11 @@ use lcr::client::Client;
 use std::env;
 
 fn main() -> Result<()> {
-    let mut client = Client::new(&env::var("LCR_USERNAME")?, &env::var("LCR_PASSWORD")?);
+    let mut client = Client::new(
+        &env::var("LCR_USERNAME")?,
+        &env::var("LCR_PASSWORD")?,
+        &env::var("LCR_UNIT")?,
+    );
 
     let moved_out = client
         .moved_out(254)
