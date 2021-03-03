@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use lcr::client::Client;
+use lcr::{client::Client, data::MemberListPerson};
+use std::collections::HashMap;
 use std::env;
 
 fn main() -> Result<()> {
@@ -21,8 +22,34 @@ fn main() -> Result<()> {
         .context("Unable to fetch moved in list")?;
     println!("Moved in:\n{:#?}", moved_in);
 
-    let member_list = client.member_list().context("Unable to fetch member list");
+    let member_list = client
+        .member_list()
+        .context("Unable to fetch member list")?;
     println!("Member list:\n{:#?}", member_list);
 
+    print_age_buckets(&member_list);
+
     Ok(())
+}
+
+fn print_age_buckets(members: &[MemberListPerson]) {
+    let mut map = HashMap::new();
+    for member in members {
+        let entry = map.entry(member.age).or_insert(0u8);
+        *entry += 1;
+    }
+
+    let mut keys: Vec<_> = map.keys().collect();
+    keys.sort();
+
+    println!("\nAge buckets:\n{:^7}{:^7}", "Age", "Number");
+    for key in keys {
+        let num = map[key];
+        let mut s = String::new();
+        for _ in 0..num {
+            s.push('#');
+        }
+
+        println!("{:^7}{:^7} {}", key, num, s);
+    }
 }

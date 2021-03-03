@@ -3,33 +3,36 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MovedOutPerson {
-    name: String,
-    move_date_display: String,
-    next_unit_name: Option<String>,
+    pub name: String,
+    pub move_date_display: String,
+    pub next_unit_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MovedInPerson {
-    name: String,
-    move_date: String,
-    prior_unit_name: Option<String>,
+    pub name: String,
+    pub move_date: String,
+    pub prior_unit_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Address {
-    address_lines: Vec<String>,
+    pub address_lines: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberListPerson {
-    address: Address,
-    age: u8,
-    convert: bool,
-    email: Option<String>,
-    phone_number: Option<String>,
-    sex: String,
-    name_list_preferred_local: String,
+    pub address: Address,
+    pub age: u8,
+    pub convert: bool,
+    pub email: Option<String>,
+    pub phone_number: Option<String>,
+    pub sex: String,
+
+    pub name_given_preferred_local: String,
+    pub name_family_preferred_local: String,
+    pub name_list_preferred_local: String,
 }
