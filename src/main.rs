@@ -28,8 +28,39 @@ fn main() -> Result<()> {
     println!("Member list:\n{:#?}", member_list);
 
     print_age_buckets(&member_list);
+    print_gender_buckets(&member_list);
 
     Ok(())
+}
+
+fn print_gender_buckets(members: &[MemberListPerson]) {
+    let mut male = 0;
+    let mut female = 0;
+
+    for member in members {
+        if member.sex.eq_ignore_ascii_case("m") {
+            male += 1;
+        } else {
+            female += 1;
+        }
+    }
+
+    println!("\nGender buckets:\n{:^7}{:^7}", "Gender", "Number");
+    let num = male;
+    let mut s = String::new();
+    for _ in 0..num {
+        s.push('#');
+    }
+
+    println!("{:^7}{:^7} {}", "Male", num, s);
+
+    let num = female;
+    let mut s = String::new();
+    for _ in 0..num {
+        s.push('#');
+    }
+
+    println!("{:^7}{:^7} {}", "Female", num, s);
 }
 
 fn print_age_buckets(members: &[MemberListPerson]) {
