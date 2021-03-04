@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -31,8 +32,32 @@ pub struct MemberListPerson {
     pub email: Option<String>,
     pub phone_number: Option<String>,
     pub sex: String,
+    pub legacy_cmis_id: u64,
 
     pub name_given_preferred_local: String,
     pub name_family_preferred_local: String,
     pub name_list_preferred_local: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MemberProfile {
+    pub individual: MemberProfileIndividual,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MemberProfileIndividual {
+    move_date: Option<String>,
+    mrn: String,
+    id: u64, // legacy_cmis_id elsewhere
+    endowed: Option<bool>,
+}
+
+impl MemberProfileIndividual {
+    pub fn move_date(&self) -> Option<NaiveDate> {
+        self.move_date
+            .as_ref()
+            .and_then(|m| NaiveDate::parse_from_str(&m, "%Y%m%d").ok())
+    }
 }

@@ -1,4 +1,4 @@
-use crate::data::{MemberListPerson, MovedInPerson, MovedOutPerson};
+use crate::data::{MemberListPerson, MemberProfile, MovedInPerson, MovedOutPerson};
 use crate::error::{Error, HeadlessError};
 use headless_chrome::{
     browser::tab::RequestInterceptionDecision,
@@ -79,6 +79,16 @@ impl Client {
         let resp = self.get(&url)?;
         let people: Vec<MemberListPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
+    }
+
+    pub fn member_profile(&mut self, legacy_cmis_id: u64) -> Result<MemberProfile> {
+        let url = format!(
+            "https://lcr.churchofjesuschrist.org/records/member-profile/service/{}?lang=eng",
+            legacy_cmis_id
+        );
+        let resp = self.get(&url)?;
+        let profile: MemberProfile = resp.into_json().map_err(Error::Io)?;
+        Ok(profile)
     }
 
     fn header_map(&mut self) -> Result<&Headers> {

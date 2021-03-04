@@ -12,3 +12,4 @@ The [official Church LCR website](https://lcr.churchofjesuschrist.org) is where 
   - [x] Member list
   - [x] Members moved in
   - [x] Members moved out
+  - [x] Member profile
