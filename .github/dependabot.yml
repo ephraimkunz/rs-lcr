@@ -1,0 +1,74 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  allow:
+  - dependency-type: direct
+  - dependency-type: indirect
+  ignore:
+  - dependency-name: libc
+    versions:
+    - 0.2.84
+    - 0.2.85
+    - 0.2.86
+    - 0.2.87
+    - 0.2.88
+    - 0.2.89
+    - 0.2.90
+    - 0.2.91
+    - 0.2.92
+    - 0.2.93
+  - dependency-name: anyhow
+    versions:
+    - 1.0.39
+  - dependency-name: wasm-bindgen
+    versions:
+    - 0.2.70
+    - 0.2.71
+    - 0.2.72
+  - dependency-name: js-sys
+    versions:
+    - 0.3.47
+    - 0.3.48
+    - 0.3.49
+  - dependency-name: regex
+    versions:
+    - 1.4.4
+    - 1.4.5
+  - dependency-name: serde
+    versions:
+    - 1.0.123
+    - 1.0.124
+  - dependency-name: once_cell
+    versions:
+    - 1.6.0
+    - 1.7.1
+  - dependency-name: web-sys
+    versions:
+    - 0.3.47
+    - 0.3.48
+  - dependency-name: serde_json
+    versions:
+    - 1.0.64
+  - dependency-name: bumpalo
+    versions:
+    - 3.5.0
+    - 3.6.0
+    - 3.6.1
+  - dependency-name: thread_local
+    versions:
+    - 1.1.2
+    - 1.1.3
+  - dependency-name: ring
+    versions:
+    - 0.16.20
+  - dependency-name: chunked_transfer
+    versions:
+    - 1.4.0
+  - dependency-name: tinyvec
+    versions:
+    - 1.1.1
