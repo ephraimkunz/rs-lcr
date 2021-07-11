@@ -5,11 +5,7 @@ use std::collections::HashMap;
 use std::env;
 
 fn main() -> Result<()> {
-    let mut client = Client::new(
-        &env::var("LCR_USERNAME")?,
-        &env::var("LCR_PASSWORD")?,
-        &env::var("LCR_UNIT")?,
-    );
+    let mut client = Client::new("ephraimkunz", "howard13", "17515");
 
     // let moved_out = client
     //     .moved_out(254)
@@ -124,14 +120,28 @@ fn print_time_in_ward_buckets(month_vec: &[i64]) {
     let mut keys: Vec<_> = map.keys().collect();
     keys.sort();
 
-    println!("\nTime in ward buckets:\n{:^7}{:^7}", "Months", "Count");
+    let mut running_count = 0;
+    let total_count = month_vec.len();
+
+    println!(
+        "\nTime in ward buckets:\n{:^7}{:^7}{:^7}{:^7}",
+        "Months", "Count", "Running", "Percent"
+    );
     for key in keys {
         let num = map[key];
+        running_count += num;
         let mut s = String::new();
         for _ in 0..num {
             s.push('#');
         }
 
-        println!("{:^7}{:^7} {}", key, num, s);
+        println!(
+            "{:^7}{:^7}{:^7}{:^7} {}",
+            key,
+            num,
+            running_count,
+            (running_count as f32 / total_count as f32) * 100f32,
+            s
+        );
     }
 }
