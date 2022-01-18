@@ -1,23 +1,32 @@
 use anyhow::{Context, Result};
 use chrono::Utc;
+use lcr::client::ClientOptions;
 use lcr::{client::Client, data::MemberListPerson};
 use std::collections::HashMap;
 use std::env;
 
 fn main() -> Result<()> {
-    let mut client = Client::new("ephraimkunz", "howard13", "17515");
+    let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
+    let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
+    let unit_number = &env::var("LCR_UNIT").expect("LCR_UNIT env var required");
+    let mut client = Client::new_with_options(
+        username,
+        password,
+        unit_number,
+        ClientOptions { headless: false },
+    );
 
-    // let moved_out = client
-    //     .moved_out(254)
-    //     .context("Unable to fetch moved out list")?;
-    // println!("Moved out:\n{:#?}", moved_out);
+    let moved_out = client
+        .moved_out(254)
+        .context("Unable to fetch moved out list")?;
+    println!("Moved out:\n{:#?}", moved_out);
 
-    // println!("---------------------------------------");
+    println!("---------------------------------------");
 
-    // let moved_in = client
-    //     .moved_in(2)
-    //     .context("Unable to fetch moved in list")?;
-    // println!("Moved in:\n{:#?}", moved_in);
+    let moved_in = client
+        .moved_in(2)
+        .context("Unable to fetch moved in list")?;
+    println!("Moved in:\n{:#?}", moved_in);
 
     let member_list = client
         .member_list()
@@ -41,14 +50,12 @@ fn main() -> Result<()> {
     let durations: Vec<_> = profiles
         .iter()
         .filter_map(|profile| {
-            profile.individual.move_date().and_then(|m| {
-                Some(
-                    now.naive_local()
-                        .date()
-                        .signed_duration_since(m)
-                        .num_weeks()
-                        / 4,
-                )
+            profile.individual.move_date().map(|m| {
+                now.naive_local()
+                    .date()
+                    .signed_duration_since(m)
+                    .num_weeks()
+                    / 4
             })
         })
         .collect();
@@ -136,7 +143,7 @@ fn print_time_in_ward_buckets(month_vec: &[i64]) {
         }
 
         println!(
-            "{:^7}{:^7}{:^7}{:^7} {}",
+            "{:^7}{:^7}{:^7}{:<7.2} {}",
             key,
             num,
             running_count,

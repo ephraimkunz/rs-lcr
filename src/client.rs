@@ -25,11 +25,23 @@ static HEADER_CHANNEL: Lazy<(MutexedHeaderSender, MutexedHeaderReceiver)> = Lazy
 });
 
 #[derive(Debug, Clone)]
+pub struct ClientOptions {
+    pub headless: bool,
+}
+
+impl Default for ClientOptions {
+    fn default() -> Self {
+        Self { headless: true }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Client {
     username: String,
     password: String,
     unit_number: String,
     headers: Option<Headers>,
+    options: ClientOptions,
 }
 
 impl Client {
@@ -38,11 +50,21 @@ impl Client {
         password: impl Into<String>,
         unit_number: impl Into<String>,
     ) -> Self {
+        Self::new_with_options(username, password, unit_number, ClientOptions::default())
+    }
+
+    pub fn new_with_options(
+        username: impl Into<String>,
+        password: impl Into<String>,
+        unit_number: impl Into<String>,
+        client_options: ClientOptions,
+    ) -> Self {
         Self {
             username: username.into(),
             password: password.into(),
             unit_number: unit_number.into(),
             headers: None,
+            options: client_options,
         }
     }
 
@@ -105,7 +127,7 @@ impl Client {
 
     fn login(&self) -> Result<Headers> {
         let launch_options = LaunchOptionsBuilder::default()
-            .headless(true)
+            .headless(self.options.headless)
             .build()
             .map_err(|s| Error::Headless(HeadlessError::String(s)))?;
         let browser = Browser::new(launch_options)
@@ -198,7 +220,7 @@ mod tests {
     fn test_moved_out() {
         let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
         let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
-        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNITenv var required");
+        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNIT env var required");
         let mut client = Client::new(username, password, unit_number);
 
         assert!(
@@ -214,7 +236,7 @@ mod tests {
     fn test_moved_in() {
         let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
         let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
-        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNITenv var required");
+        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNIT env var required");
         let mut client = Client::new(username, password, unit_number);
 
         assert!(
@@ -230,7 +252,7 @@ mod tests {
     fn test_member_list() {
         let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
         let password = &env::var("LCR_PASSWORD").expect("LCR_PASSWORD env var required");
-        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNITenv var required");
+        let unit_number = &env::var("LCR_UNIT").expect("LCR_UNIT env var required");
         let mut client = Client::new(username, password, unit_number);
 
         assert!(

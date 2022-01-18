@@ -48,16 +48,16 @@ pub struct MemberProfile {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberProfileIndividual {
-    move_date: Option<String>,
-    mrn: String,
-    id: u64, // legacy_cmis_id elsewhere
-    endowed: Option<bool>,
+    pub move_date: Option<String>,
+    pub mrn: String,
+    pub id: u64, // legacy_cmis_id elsewhere
+    pub endowed: Option<bool>,
 }
 
 impl MemberProfileIndividual {
     pub fn move_date(&self) -> Option<NaiveDate> {
         self.move_date
             .as_ref()
-            .and_then(|m| NaiveDate::parse_from_str(&m, "%Y%m%d").ok())
+            .and_then(|m| NaiveDate::parse_from_str(m, "%Y%m%d").ok())
     }
 }
