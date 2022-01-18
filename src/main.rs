@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
-use chrono::Utc;
 use lcr::client::ClientOptions;
 use lcr::{client::Client, data::MemberListPerson};
 use std::collections::HashMap;
 use std::env;
+use time::OffsetDateTime;
 
 fn main() -> Result<()> {
     let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
@@ -45,17 +45,16 @@ fn main() -> Result<()> {
         })
         .collect();
 
+    // println!("{profiles:#?}");
+
     let profiles = profiles?;
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
     let durations: Vec<_> = profiles
         .iter()
         .filter_map(|profile| {
             profile.individual.move_date().map(|m| {
-                now.naive_local()
-                    .date()
-                    .signed_duration_since(m)
-                    .num_weeks()
-                    / 4
+                let difference = now.date() - m;
+                difference.whole_weeks() / 4
             })
         })
         .collect();

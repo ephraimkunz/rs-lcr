@@ -1,5 +1,5 @@
-use chrono::NaiveDate;
 use serde::Deserialize;
+use time::macros::format_description;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,9 +55,10 @@ pub struct MemberProfileIndividual {
 }
 
 impl MemberProfileIndividual {
-    pub fn move_date(&self) -> Option<NaiveDate> {
+    pub fn move_date(&self) -> Option<time::Date> {
+        let date_format = format_description!("[year][month][day]");
         self.move_date
             .as_ref()
-            .and_then(|m| NaiveDate::parse_from_str(m, "%Y%m%d").ok())
+            .and_then(|m| time::Date::parse(m, &date_format).ok())
     }
 }
