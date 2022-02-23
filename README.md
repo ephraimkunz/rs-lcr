@@ -1,5 +1,4 @@
 ![CI](https://github.com/ephraimkunz/rs-lcr/workflows/CI/badge.svg?branch=master)
-![Dependabot](https://flat.badgen.net/dependabot/ephraimkunz/rs-lcr?icon=dependabot)
 [![codecov](https://codecov.io/gh/ephraimkunz/rs-lcr/branch/master/graph/badge.svg?token=DRXPYPQIP6)](undefined)
 # rs-lcr
 
