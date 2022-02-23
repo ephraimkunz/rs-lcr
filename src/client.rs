@@ -74,6 +74,7 @@ impl Client {
         for (k, v) in headers {
             req = req.set(k, v);
         }
+        req = req.set("Accept", "application/json");
 
         Ok(req.call()?)
     }
