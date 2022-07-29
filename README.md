@@ -12,11 +12,16 @@ The [official Church LCR website](https://lcr.churchofjesuschrist.org) is where 
   - [x] Members moved in
   - [x] Members moved out
   - [x] Member profile
+  - [x] Ward photo directory
 
 ## Usage
 - Use the provided command-line interface:
 1. Clone the repo: `git clone https://github.com/ephraimkunz/rs-lcr.git`.
 2. In the root of the repo, run `cargo run` which will print a help menu of possible options. You'll need to provide 3 environment variables: `LCR_USERNAME`, `LCR_PASSWORD`, `LCR_UNIT`. These correspond to your LDS username, password, and unit number. Your unit number can be found in parenthesis after the name of the ward in the LCR homepage.
+3. If using the ward photo directory option, pass additional GOOGLE_SHEETS_CLIENT_ID and 
+GOOGLE_SHEETS_CLIENT_SECRET environment variables. These should come from the Google developer console after you
+set up Sheets API access. After the ward photo directory is generated into a fresh Google Sheet, the URL of the sheet 
+is printed. It's recommended to quickly print out that sheet in portrait orientation, since it appears the photo URLs fetched from LCR quickly expire.
 
 - Use as a library:
 1. Add `lcr = { git = "https://github.com/ephraimkunz/rs-lcr" }` to your Cargo.toml under the dependencies section.
