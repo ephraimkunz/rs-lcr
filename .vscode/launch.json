@@ -11,9 +11,8 @@
         "stopOnEntry": false,
         "sourceLanguages": ["rust"],
         "env": {
-            "LCR_USERNAME": "ephraimkunz",
-            "LCR_PASSWORD": "howard13",
-            "LCR_UNIT" : "17515"},
+          // Put env variables here.
+        }
       },
     ]
   }
