@@ -1,10 +1,13 @@
-use crate::data::{MemberListPerson, MemberProfile, MovedInPerson, MovedOutPerson};
+use crate::data::{
+    MemberListPerson, MemberProfile, MovedInPerson, MovedOutPerson, PhotoInfo, VisualPerson,
+};
 use crate::error::{Error, HeadlessError};
 use headless_chrome::{
     browser::tab::RequestInterceptionDecision,
     protocol::network::events::RequestInterceptedEventParams,
     protocol::network::methods::RequestPattern, Browser, LaunchOptionsBuilder,
 };
+use itertools::Itertools;
 
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -102,6 +105,37 @@ impl Client {
         let resp = self.get(&url)?;
         let people: Vec<MemberListPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
+    }
+
+    pub fn visual_member_list(&mut self) -> Result<Vec<VisualPerson>> {
+        let url = format!("https://lcr.churchofjesuschrist.org/services/photos/manage-photos/approved-image-individuals/{}?lang=eng", self.unit_number);
+        let resp = self.get(&url)?;
+        let photos: Vec<PhotoInfo> = resp.into_json().map_err(Error::Io)?;
+
+        // Photos come in pairs of houshold, individual. Take the individual picture if there is
+        // one, falling back to the household if not.
+
+        let result = photos
+            .iter()
+            .tuples()
+            .map(|(household, individual)| {
+                let photo_url;
+                if individual.image.token_url != "images/nophoto.svg" {
+                    photo_url = individual.image.token_url.clone();
+                } else if household.image.token_url != "images/nohousehold.svg" {
+                    photo_url = household.image.token_url.clone();
+                } else {
+                    photo_url =
+                        "https://lcr.churchofjesuschrist.org/images/nohousehold.svg".to_string();
+                }
+
+                VisualPerson {
+                    name: household.spoken_name.clone(),
+                    photo_url,
+                }
+            })
+            .collect();
+        Ok(result)
     }
 
     pub fn member_profile(&mut self, legacy_cmis_id: u64) -> Result<MemberProfile> {

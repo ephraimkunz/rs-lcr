@@ -41,6 +41,25 @@ pub struct MemberListPerson {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PhotoInfo {
+    pub spoken_name: String,
+    pub image: Image,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Image {
+    pub token_url: String,
+}
+
+#[derive(Debug)]
+pub struct VisualPerson {
+    pub name: String,
+    pub photo_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MemberProfile {
     pub individual: MemberProfileIndividual,
 }

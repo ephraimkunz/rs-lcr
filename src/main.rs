@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use std::env;
 use time::OffsetDateTime;
 
+mod visual_directory;
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 /// A CLI tool for managing LCR data
@@ -32,11 +34,15 @@ enum Commands {
     /// Print members list
     Members,
 
+    /// Output visual members list
+    VisualMembers,
+
     /// Print report
     Report,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let username = &env::var("LCR_USERNAME").expect("LCR_USERNAME env var required");
@@ -100,6 +106,9 @@ fn main() -> Result<()> {
                 .collect();
 
             print_time_in_ward_buckets(&durations);
+        }
+        Commands::VisualMembers => {
+            visual_directory::create_visual_directory(&mut client).await?;
         }
     }
 
