@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use lcr::client::ClientOptions;
 use lcr::{client::Client, data::MemberListPerson};
 use std::collections::HashMap;
@@ -26,19 +26,34 @@ enum Commands {
     Emails,
 
     /// Print recently moved-out list
-    MovedOut,
+    MovedOut {
+        #[arg(long, short, value_enum)]
+        output: OutputType,
+    },
 
     /// Print recently moved-in list
-    MovedIn,
+    MovedIn {
+        #[arg(long, short, value_enum)]
+        output: OutputType,
+    },
 
     /// Print members list
-    Members,
+    Members {
+        #[arg(long, short, value_enum)]
+        output: OutputType,
+    },
 
     /// Output visual members list
     VisualMembers,
 
     /// Print report
     Report,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+enum OutputType {
+    Plaintext,
+    Json,
 }
 
 #[tokio::main]
@@ -61,23 +76,34 @@ async fn main() -> Result<()> {
         Commands::Emails => {
             print_male_emails(&client.member_list()?);
         }
-        Commands::MovedOut => {
+        Commands::MovedOut { output } => {
             let moved_out = client
                 .moved_out(254)
                 .context("Unable to fetch moved out list")?;
-            println!("{:#?}", moved_out);
+
+            match output {
+                OutputType::Plaintext => println!("{:#?}", moved_out),
+                OutputType::Json => serde_json::to_writer_pretty(std::io::stdout(), &moved_out)?,
+            }
         }
-        Commands::MovedIn => {
+        Commands::MovedIn { output } => {
             let moved_in = client
                 .moved_in(2)
                 .context("Unable to fetch moved in list")?;
-            println!("{:#?}", moved_in);
+
+            match output {
+                OutputType::Plaintext => println!("{:#?}", moved_in),
+                OutputType::Json => serde_json::to_writer_pretty(std::io::stdout(), &moved_in)?,
+            }
         }
-        Commands::Members => {
+        Commands::Members { output } => {
             let member_list = client
                 .member_list()
                 .context("Unable to fetch member list")?;
-            println!("{:#?}", member_list);
+            match output {
+                OutputType::Plaintext => println!("{:#?}", member_list),
+                OutputType::Json => serde_json::to_writer_pretty(std::io::stdout(), &member_list)?,
+            }
         }
         Commands::Report => {
             let member_list = client.member_list()?;

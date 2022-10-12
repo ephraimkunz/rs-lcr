@@ -1,7 +1,7 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use time::macros::format_description;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MovedOutPerson {
     pub name: String,
@@ -9,7 +9,7 @@ pub struct MovedOutPerson {
     pub next_unit_name: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MovedInPerson {
     pub name: String,
@@ -17,13 +17,13 @@ pub struct MovedInPerson {
     pub prior_unit_name: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Address {
     pub address_lines: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberListPerson {
     pub address: Address,
@@ -58,13 +58,13 @@ pub struct VisualPerson {
     pub photo_url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberProfile {
     pub individual: MemberProfileIndividual,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberProfileIndividual {
     pub move_date: Option<String>,
