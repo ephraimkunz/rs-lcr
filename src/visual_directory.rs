@@ -74,7 +74,7 @@ fn wait_for_redirect(redirect_url: &str) -> (String, String) {
         let code_pair = url
             .query_pairs()
             .find(|pair| {
-                let &(ref key, _) = pair;
+                let (key, _) = pair;
                 key == "code"
             })
             .unwrap();
@@ -85,7 +85,7 @@ fn wait_for_redirect(redirect_url: &str) -> (String, String) {
         let state_pair = url
             .query_pairs()
             .find(|pair| {
-                let &(ref key, _) = pair;
+                let (key, _) = pair;
                 key == "state"
             })
             .unwrap();

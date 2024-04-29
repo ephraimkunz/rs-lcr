@@ -85,7 +85,10 @@ impl Client {
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self, num_months: u8) -> Result<Vec<MovedInPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/api/report/members-moved-in/unit/{}/{}?lang=eng", self.unit_number, num_months);
+        let url = format!(
+            "https://lcr.churchofjesuschrist.org/api/report/members-moved-in/unit/{}/{}?lang=eng",
+            self.unit_number, num_months
+        );
         let resp = self.get(&url)?;
         let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)

@@ -145,14 +145,8 @@ fn print_male_emails(members: &[MemberListPerson]) {
     for email in members.iter().filter_map(|m| {
         if m.sex != "M" {
             None
-        } else if let Some(email) = &m.email {
-            if email.contains("DNC") {
-                None
-            } else {
-                Some(email)
-            }
         } else {
-            None
+            m.email.as_ref().filter(|email| !email.contains("DNC"))
         }
     }) {
         println!("{}", email);
