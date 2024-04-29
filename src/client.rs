@@ -85,7 +85,7 @@ impl Client {
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_in(&mut self, num_months: u8) -> Result<Vec<MovedInPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/report/members-moved-in/unit/{}/{}?lang=eng", self.unit_number, num_months);
+        let url = format!("https://lcr.churchofjesuschrist.org/api/report/members-moved-in/unit/{}/{}?lang=eng", self.unit_number, num_months);
         let resp = self.get(&url)?;
         let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
@@ -94,14 +94,14 @@ impl Client {
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self, num_months: u8) -> Result<Vec<MovedOutPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/umlu/report/members-moved-out/unit/{}/{}?lang=eng", self.unit_number, num_months);
+        let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/report/members-moved-out/unit/{}/{}?lang=eng", self.unit_number, num_months);
         let resp = self.get(&url)?;
         let people: Vec<MovedOutPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
     }
 
     pub fn member_list(&mut self) -> Result<Vec<MemberListPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/umlu/report/member-list?lang=eng&unitNumber={}", self.unit_number);
+        let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/report/member-list?lang=eng&unitNumber={}", self.unit_number);
         let resp = self.get(&url)?;
         let people: Vec<MemberListPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
@@ -140,7 +140,7 @@ impl Client {
 
     pub fn member_profile(&mut self, legacy_cmis_id: u64) -> Result<MemberProfile> {
         let url = format!(
-            "https://lcr.churchofjesuschrist.org/records/member-profile/service/{}?lang=eng",
+            "https://lcr.churchofjesuschrist.org/api/records/member-profile/service/{}?lang=eng",
             legacy_cmis_id
         );
         let resp = self.get(&url)?;
@@ -179,7 +179,7 @@ impl Client {
         // Username. There's probably a better way to do this than clicking the element 3 times, but just doing it
         // once seems to fail on slow internet connections.
         for _ in 0..3 {
-            tab.wait_for_element("input#okta-signin-username")
+            tab.wait_for_element("input#input28")
                 .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?
                 .click()
                 .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
@@ -187,7 +187,7 @@ impl Client {
 
         tab.type_str(&self.username)
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
-        tab.wait_for_element("input#okta-signin-submit")
+        tab.wait_for_element("input.button.button-primary")
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?
             .click()
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;

@@ -26,7 +26,7 @@ pub struct Address {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MemberListPerson {
-    pub address: Address,
+    pub address: Option<Address>,
     pub age: u8,
     pub convert: bool,
     pub email: Option<String>,
@@ -68,7 +68,7 @@ pub struct MemberProfile {
 #[serde(rename_all = "camelCase")]
 pub struct MemberProfileIndividual {
     pub move_date: Option<String>,
-    pub mrn: String,
+    pub mrn: Option<String>,
     pub id: u64, // legacy_cmis_id elsewhere
     pub endowed: Option<bool>,
 }

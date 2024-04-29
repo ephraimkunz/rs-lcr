@@ -22,7 +22,6 @@ const NUM_COLS_PER_PERSON: u32 = 2; // Photo and name
 
 pub async fn create_visual_directory(client: &mut lcr::client::Client) -> Result<()> {
     let visual_member_list = client.visual_member_list()?;
-
     const REDIRECT_URL: &str = "127.0.0.1:8080";
     let mut client = sheets::Client::new(
         std::env::var("GOOGLE_SHEETS_CLIENT_ID").expect("Couldn't read GOOGLE_SHEETS_CLIENT_ID"),
@@ -126,7 +125,7 @@ async fn create_spreadsheet(client: &mut sheets::Client) -> Result<Spreadsheet> 
         spreadsheet_url: "".to_string(),
     };
 
-    client.spreadsheets().create(&spreadsheet).await
+    Ok(client.spreadsheets().create(&spreadsheet).await?.body)
 }
 
 fn size_of_spreadsheet(num_members: usize) -> (u32, u32) {
