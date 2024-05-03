@@ -111,7 +111,7 @@ impl Client {
     }
 
     pub fn visual_member_list(&mut self) -> Result<Vec<VisualPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/services/photos/manage-photos/approved-image-individuals/{}?lang=eng", self.unit_number);
+        let url = format!("https://lcr.churchofjesuschrist.org/api/photos/manage-photos/approved-image-individuals/{}?lang=eng", self.unit_number);
         let resp = self.get(&url)?;
         let photos: Vec<PhotoInfo> = resp.into_json().map_err(Error::Io)?;
 
