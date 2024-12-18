@@ -1,5 +1,6 @@
 use crate::data::{
-    MemberListPerson, MemberProfile, MovedInPerson, MovedOutPerson, PhotoInfo, VisualPerson,
+    EQMinisteringAssignments, MemberListPerson, MemberProfile, MovedInPerson, MovedOutPerson,
+    PhotoInfo, RSMinisteringAssignments, VisualPerson,
 };
 use crate::error::{Error, HeadlessError};
 use headless_chrome::{
@@ -10,7 +11,7 @@ use headless_chrome::{
 use itertools::Itertools;
 
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
@@ -108,6 +109,32 @@ impl Client {
         let resp = self.get(&url)?;
         let people: Vec<MemberListPerson> = resp.into_json().map_err(Error::Io)?;
         Ok(people)
+    }
+
+    pub fn ministering_people(
+        &mut self,
+        from_eq: bool,
+        only_females: bool,
+    ) -> Result<HashSet<String>> {
+        let member_list = self.member_list()?;
+        let females_by_id: HashMap<u64, bool> = member_list
+            .into_iter()
+            .map(|m| (m.legacy_cmis_id, m.sex == "F"))
+            .collect();
+
+        let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/v1/ministering/data-full?lang=eng&type={}&unitNumber={}", if from_eq {"EQ"} else {"RS"},  self.unit_number);
+        let resp = self.get(&url)?;
+
+        let mut set = HashSet::new();
+        if from_eq {
+            let assignments: EQMinisteringAssignments = resp.into_json().map_err(Error::Io)?;
+            assignments.collect_unique_names(&mut set, only_females, &females_by_id);
+        } else {
+            let assignments: RSMinisteringAssignments = resp.into_json().map_err(Error::Io)?;
+            assignments.collect_unique_names(&mut set, only_females, &females_by_id);
+        }
+
+        Ok(set)
     }
 
     pub fn visual_member_list(&mut self) -> Result<Vec<VisualPerson>> {
@@ -217,9 +244,7 @@ impl Client {
 
         let interceptor = Box::new(|_, _, params: RequestInterceptedEventParams| {
             let request = params.request;
-            if request.url == "https://lcr.churchofjesuschrist.org/?lang=eng"
-                && request.method == "GET"
-            {
+            if request.url == "https://lcr.churchofjesuschrist.org/" && request.method == "GET" {
                 HEADER_CHANNEL
                     .0
                     .lock()

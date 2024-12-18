@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
+use itertools::Itertools;
 use lcr::client::ClientOptions;
 use lcr::{client::Client, data::MemberListPerson};
 use std::collections::HashMap;
@@ -48,6 +49,9 @@ enum Commands {
 
     /// Print report
     Report,
+
+    /// Get members involved with ministering
+    Ministering,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
@@ -104,6 +108,24 @@ async fn main() -> Result<()> {
                 OutputType::Plaintext => println!("{:#?}", member_list),
                 OutputType::Json => serde_json::to_writer_pretty(std::io::stdout(), &member_list)?,
             }
+        }
+        Commands::Ministering => {
+            let male_ministering = client
+                .ministering_people(true, true)
+                .context("Unable to fetch male ministering people")?;
+
+            let female_ministering = client
+                .ministering_people(false, true)
+                .context("Unable to fetch female ministering people")?;
+
+            println!(
+                "Women to remove from ministering:\n{}\n",
+                male_ministering.difference(&female_ministering).join("\t\n")
+            );
+            println!(
+                "Women to add to ministering:\n{}\n",
+                female_ministering.difference(&male_ministering).join("\t\n")
+            );
         }
         Commands::Report => {
             let member_list = client.member_list()?;

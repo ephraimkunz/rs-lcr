@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use serde::{Deserialize, Serialize};
 use time::macros::format_description;
 
@@ -80,4 +82,109 @@ impl MemberProfileIndividual {
             .as_ref()
             .and_then(|m| time::Date::parse(m, &date_format).ok())
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RSMinisteringAssignments {
+    relief_society: Vec<QuorumOrClass>,
+}
+
+impl RSMinisteringAssignments {
+    pub fn collect_unique_names(
+        &self,
+        set: &mut HashSet<String>,
+        only_females: bool,
+        females_by_id: &HashMap<u64, bool>,
+    ) {
+        for class in &self.relief_society {
+            class.collect_unique_names(set, only_females, females_by_id);
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EQMinisteringAssignments {
+    elders: Vec<QuorumOrClass>,
+}
+
+impl EQMinisteringAssignments {
+    pub fn collect_unique_names(
+        &self,
+        set: &mut HashSet<String>,
+        only_females: bool,
+        females_by_id: &HashMap<u64, bool>,
+    ) {
+        for quorum in &self.elders {
+            quorum.collect_unique_names(set, only_females, females_by_id);
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumOrClass {
+    companionships: Vec<Companionship>,
+}
+
+impl QuorumOrClass {
+    pub fn collect_unique_names(
+        &self,
+        set: &mut HashSet<String>,
+        only_females: bool,
+        females_by_id: &HashMap<u64, bool>,
+    ) {
+        for companionship in &self.companionships {
+            companionship.collect_unique_names(set, only_females, females_by_id);
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Companionship {
+    ministers: Vec<MinisteringCompanionship>,
+    assignments: Option<Vec<MinisteringAssignment>>,
+}
+
+impl Companionship {
+    pub fn collect_unique_names(
+        &self,
+        set: &mut HashSet<String>,
+        only_females: bool,
+        females_by_id: &HashMap<u64, bool>,
+    ) {
+        for minister in &self.ministers {
+            let is_female = females_by_id.get(&minister.legacy_cmis_id).unwrap_or(&true);
+            if !only_females || *is_female {
+                set.insert(minister.name.to_string());
+            }
+        }
+
+        if let Some(assignments) = &self.assignments {
+            for assignment in assignments {
+                let is_female = females_by_id
+                    .get(&assignment.legacy_cmis_id)
+                    .unwrap_or(&true);
+                if !only_females || *is_female {
+                    set.insert(assignment.name.to_string());
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MinisteringCompanionship {
+    name: String,
+    legacy_cmis_id: u64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MinisteringAssignment {
+    name: String,
+    legacy_cmis_id: u64,
 }
