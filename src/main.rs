@@ -120,11 +120,15 @@ async fn main() -> Result<()> {
 
             println!(
                 "Women to remove from ministering:\n{}\n",
-                male_ministering.difference(&female_ministering).join("\t\n")
+                male_ministering
+                    .difference(&female_ministering)
+                    .join("\t\n")
             );
             println!(
                 "Women to add to ministering:\n{}\n",
-                female_ministering.difference(&male_ministering).join("\t\n")
+                female_ministering
+                    .difference(&male_ministering)
+                    .join("\t\n")
             );
         }
         Commands::Report => {
