@@ -15,6 +15,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
+use ureq::http::Response;
+use ureq::Body;
 
 type Headers = HashMap<String, String>;
 type Result<R> = std::result::Result<R, Error>;
@@ -72,13 +74,13 @@ impl Client {
         }
     }
 
-    fn get(&mut self, url: &str) -> Result<ureq::Response> {
+    fn get(&mut self, url: &str) -> Result<Response<Body>> {
         let mut req = ureq::get(url);
         let headers = self.header_map()?;
         for (k, v) in headers {
-            req = req.set(k, v);
+            req = req.header(k, v);
         }
-        req = req.set("Accept", "application/json");
+        req = req.header("Accept", "application/json");
 
         Ok(req.call()?)
     }
@@ -90,8 +92,8 @@ impl Client {
             "https://lcr.churchofjesuschrist.org/api/report/members-moved-in/unit/{}/{}?lang=eng",
             self.unit_number, num_months
         );
-        let resp = self.get(&url)?;
-        let people: Vec<MovedInPerson> = resp.into_json().map_err(Error::Io)?;
+        let mut resp = self.get(&url)?;
+        let people: Vec<MovedInPerson> = resp.body_mut().read_json().map_err(Error::Http)?;
         Ok(people)
     }
 
@@ -99,15 +101,15 @@ impl Client {
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self, num_months: u8) -> Result<Vec<MovedOutPerson>> {
         let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/report/members-moved-out/unit/{}/{}?lang=eng", self.unit_number, num_months);
-        let resp = self.get(&url)?;
-        let people: Vec<MovedOutPerson> = resp.into_json().map_err(Error::Io)?;
+        let mut resp = self.get(&url)?;
+        let people: Vec<MovedOutPerson> = resp.body_mut().read_json().map_err(Error::Http)?;
         Ok(people)
     }
 
     pub fn member_list(&mut self) -> Result<Vec<MemberListPerson>> {
         let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/report/member-list?lang=eng&unitNumber={}", self.unit_number);
-        let resp = self.get(&url)?;
-        let people: Vec<MemberListPerson> = resp.into_json().map_err(Error::Io)?;
+        let mut resp = self.get(&url)?;
+        let people: Vec<MemberListPerson> = resp.body_mut().read_json().map_err(Error::Http)?;
         Ok(people)
     }
 
@@ -123,14 +125,16 @@ impl Client {
             .collect();
 
         let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/v1/ministering/data-full?lang=eng&type={}&unitNumber={}", if from_eq {"EQ"} else {"RS"},  self.unit_number);
-        let resp = self.get(&url)?;
+        let mut resp = self.get(&url)?;
 
         let mut set = HashSet::new();
         if from_eq {
-            let assignments: EQMinisteringAssignments = resp.into_json().map_err(Error::Io)?;
+            let assignments: EQMinisteringAssignments =
+                resp.body_mut().read_json().map_err(Error::Http)?;
             assignments.collect_unique_names(&mut set, only_females, &females_by_id);
         } else {
-            let assignments: RSMinisteringAssignments = resp.into_json().map_err(Error::Io)?;
+            let assignments: RSMinisteringAssignments =
+                resp.body_mut().read_json().map_err(Error::Http)?;
             assignments.collect_unique_names(&mut set, only_females, &females_by_id);
         }
 
@@ -139,8 +143,8 @@ impl Client {
 
     pub fn visual_member_list(&mut self) -> Result<Vec<VisualPerson>> {
         let url = format!("https://lcr.churchofjesuschrist.org/api/photos/manage-photos/approved-image-individuals/{}?lang=eng", self.unit_number);
-        let resp = self.get(&url)?;
-        let photos: Vec<PhotoInfo> = resp.into_json().map_err(Error::Io)?;
+        let mut resp = self.get(&url)?;
+        let photos: Vec<PhotoInfo> = resp.body_mut().read_json().map_err(Error::Http)?;
 
         // Photos come in pairs of houshold, individual. Take the individual picture if there is
         // one, falling back to the household if not.
@@ -173,8 +177,8 @@ impl Client {
             "https://lcr.churchofjesuschrist.org/api/records/member-profile/service/{}?lang=eng",
             legacy_cmis_id
         );
-        let resp = self.get(&url)?;
-        let profile: MemberProfile = resp.into_json().map_err(Error::Io)?;
+        let mut resp = self.get(&url)?;
+        let profile: MemberProfile = resp.body_mut().read_json().map_err(Error::Http)?;
         Ok(profile)
     }
 
