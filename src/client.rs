@@ -4,9 +4,9 @@ use crate::data::{
 };
 use crate::error::{Error, HeadlessError};
 use headless_chrome::{
-    browser::tab::RequestInterceptionDecision,
+    Browser, LaunchOptionsBuilder, browser::tab::RequestInterceptionDecision,
     protocol::network::events::RequestInterceptedEventParams,
-    protocol::network::methods::RequestPattern, Browser, LaunchOptionsBuilder,
+    protocol::network::methods::RequestPattern,
 };
 use itertools::Itertools;
 
@@ -15,14 +15,14 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
-use ureq::http::Response;
 use ureq::Body;
+use ureq::http::Response;
 
 type Headers = HashMap<String, String>;
 type Result<R> = std::result::Result<R, Error>;
 
 // Lots of shenanigans since we can't directly set the headers inside the Fn interceptor because it's not FnMut.
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, channel};
 type MutexedHeaderSender = Mutex<Sender<Headers>>;
 type MutexedHeaderReceiver = Mutex<Receiver<Headers>>;
 static HEADER_CHANNEL: Lazy<(MutexedHeaderSender, MutexedHeaderReceiver)> = Lazy::new(|| {
@@ -100,14 +100,20 @@ impl Client {
     /// # Errors
     /// HTTP fetching errors for this specific call or for logging in the user specified by the credentials when this client was created.
     pub fn moved_out(&mut self, num_months: u8) -> Result<Vec<MovedOutPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/report/members-moved-out/unit/{}/{}?lang=eng", self.unit_number, num_months);
+        let url = format!(
+            "https://lcr.churchofjesuschrist.org/api/umlu/report/members-moved-out/unit/{}/{}?lang=eng",
+            self.unit_number, num_months
+        );
         let mut resp = self.get(&url)?;
         let people: Vec<MovedOutPerson> = resp.body_mut().read_json().map_err(Error::Http)?;
         Ok(people)
     }
 
     pub fn member_list(&mut self) -> Result<Vec<MemberListPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/report/member-list?lang=eng&unitNumber={}", self.unit_number);
+        let url = format!(
+            "https://lcr.churchofjesuschrist.org/api/umlu/report/member-list?lang=eng&unitNumber={}",
+            self.unit_number
+        );
         let mut resp = self.get(&url)?;
         let people: Vec<MemberListPerson> = resp.body_mut().read_json().map_err(Error::Http)?;
         Ok(people)
@@ -124,7 +130,11 @@ impl Client {
             .map(|m| (m.legacy_cmis_id, m.sex == "F"))
             .collect();
 
-        let url = format!("https://lcr.churchofjesuschrist.org/api/umlu/v1/ministering/data-full?lang=eng&type={}&unitNumber={}", if from_eq {"EQ"} else {"RS"},  self.unit_number);
+        let url = format!(
+            "https://lcr.churchofjesuschrist.org/api/umlu/v1/ministering/data-full?lang=eng&type={}&unitNumber={}",
+            if from_eq { "EQ" } else { "RS" },
+            self.unit_number
+        );
         let mut resp = self.get(&url)?;
 
         let mut set = HashSet::new();
@@ -142,7 +152,10 @@ impl Client {
     }
 
     pub fn visual_member_list(&mut self) -> Result<Vec<VisualPerson>> {
-        let url = format!("https://lcr.churchofjesuschrist.org/api/photos/manage-photos/approved-image-individuals/{}?lang=eng", self.unit_number);
+        let url = format!(
+            "https://lcr.churchofjesuschrist.org/api/photos/manage-photos/approved-image-individuals/{}?lang=eng",
+            self.unit_number
+        );
         let mut resp = self.get(&url)?;
         let photos: Vec<PhotoInfo> = resp.body_mut().read_json().map_err(Error::Http)?;
 
