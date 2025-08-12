@@ -226,7 +226,7 @@ impl Client {
         // Username. There's probably a better way to do this than clicking the element 3 times, but just doing it
         // once seems to fail on slow internet connections.
         for _ in 0..3 {
-            tab.wait_for_element("input#input28")
+            tab.wait_for_element("input#username-input")
                 .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?
                 .click()
                 .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
@@ -234,13 +234,13 @@ impl Client {
 
         tab.type_str(&self.username)
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
-        tab.wait_for_element("input.button.button-primary")
+        tab.wait_for_element("button#button-primary")
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?
             .click()
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
 
         // Password
-        tab.wait_for_element("input[type=password]")
+        tab.wait_for_element("input#password-input")
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?
             .click()
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
@@ -249,7 +249,7 @@ impl Client {
         sleep(Duration::from_secs(1)); // Not pausing here sometimes results in crashes.
 
         let submit_element = tab
-            .wait_for_element("input[type=submit]")
+            .wait_for_element("button#button-primary")
             .map_err(|e| Error::Headless(HeadlessError::Wrapped(Box::new(e.compat()))))?;
 
         // Get the info we need to start requesting stuff ourselves.
